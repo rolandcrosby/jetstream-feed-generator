@@ -1,0 +1,5 @@
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.idea
+jetstream-feed-generator

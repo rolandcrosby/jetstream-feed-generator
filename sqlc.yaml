@@ -1,0 +1,11 @@
+# Run `sqlc generate` to generate Go code in db/sqlc
+
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "db/queries/queries.sql"
+    schema: "db/migrations/schema.sql"
+    gen:
+      go:
+        package: "db"
+        out: "db/sqlc"
