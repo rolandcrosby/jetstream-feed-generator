@@ -34,7 +34,7 @@ func (dbf DbFeed) GetPage(
 		}
 	}
 
-	var posts []*bsky.FeedDefs_SkeletonFeedPost
+	posts := make([]*bsky.FeedDefs_SkeletonFeedPost, 0)
 	dbPosts, err := dbf.Q.GetFeedPosts(ctx, db.GetFeedPostsParams{
 		FeedName: dbf.FeedName,
 		TimeUs:   cursorAsInt,
