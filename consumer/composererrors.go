@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	apibsky "github.com/bluesky-social/indigo/api/bsky"
-	"github.com/bluesky-social/jetstream/pkg/models"
 	dbpkg "jetstream-feed-generator/db/sqlc"
 	"log/slog"
 	"regexp"
 	"strings"
+
+	apibsky "github.com/bluesky-social/indigo/api/bsky"
+	"github.com/bluesky-social/jetstream/pkg/models"
 )
 
 type ComposerErrorsFeed struct {
@@ -31,33 +32,8 @@ func (f *ComposerErrorsFeed) Name() string {
 	return f.name
 }
 
-func (f *ComposerErrorsFeed) Initialize(ctx context.Context) error {
-	if err := f.q.UpsertFeed(ctx, f.Name()); err != nil {
-		return fmt.Errorf("failed to upsert feed: %v", err)
-	}
-	return nil
-}
-
-func (f *ComposerErrorsFeed) LatestCursor(ctx context.Context) (int64, error) {
-	feed, err := f.q.GetFeed(ctx, f.Name())
-	if err != nil {
-		return 0, err
-	}
-	if feed.LatestCursor.Valid {
-		return feed.LatestCursor.Int64, nil
-	}
-	return 0, nil
-}
-
-func (f *ComposerErrorsFeed) SaveCursor(ctx context.Context, cursor int64) error {
-	err := f.q.UpdateFeedCursor(ctx, dbpkg.UpdateFeedCursorParams{
-		LatestCursor: sql.NullInt64{Int64: cursor, Valid: true},
-		FeedName:     f.Name(),
-	})
-	if err != nil {
-		return err
-	}
-	return nil
+func (f *ComposerErrorsFeed) DB() *dbpkg.Queries {
+	return f.q
 }
 
 func (f *ComposerErrorsFeed) HandlePost(ctx context.Context, event *models.Event, post *apibsky.FeedPost) error {
