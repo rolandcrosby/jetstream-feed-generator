@@ -2,19 +2,20 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"jetstream-feed-generator/consumer"
 	"log/slog"
 	"reflect"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	DBFilename string `mapstructure:"db_filename"`
-	FeedName   string `mapstructure:"feed_name"`
-	LogLevel   string `mapstructure:"log_level"`
-	LogFormat  string `mapstructure:"log_format"`
+	DBFilename string   `mapstructure:"db_filename"`
+	FeedNames  []string `mapstructure:"feed_names"`
+	LogLevel   string   `mapstructure:"log_level"`
+	LogFormat  string   `mapstructure:"log_format"`
 	Consumer   struct {
 		Enabled      bool   `mapstructure:"enabled"`
 		JetstreamURL string `mapstructure:"jetstream_url"`
@@ -35,8 +36,8 @@ func (config Config) Validate() error {
 	if config.DBFilename == "" {
 		return fmt.Errorf("DB_FILENAME is required")
 	}
-	if config.FeedName == "" {
-		return fmt.Errorf("FEED_NAME is required")
+	if len(config.FeedNames) == 0 {
+		return fmt.Errorf("FEED_NAMES is required")
 	}
 	if config.Consumer.Enabled {
 		if config.Consumer.JetstreamURL == "" {
@@ -63,7 +64,7 @@ func setupFlags(cmd *cobra.Command) {
 	flags.String("config", "", "YAML config file path")
 
 	flags.String("db_filename", "feeds.sqlite", "Database filename")
-	flags.String("feed_name", "composer-errors", "Feed name")
+	flags.StringArray("feed_names", []string{"composer-errors"}, "Feed names")
 	flags.String("log_level", "INFO", "Log level")
 	flags.String("log_format", "text", "Log format (text or json)")
 
