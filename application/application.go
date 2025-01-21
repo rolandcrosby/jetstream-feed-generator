@@ -86,7 +86,7 @@ func Run(config confpkg.Config) error {
 			FeedActorDID:    config.Feedgen.FeedActorDID,
 			ServiceEndpoint: config.Feedgen.ServiceEndpoint,
 			Port:            config.Feedgen.Port,
-			FeedNames:       []string{config.FeedName},
+			FeedNames:       config.FeedNames,
 			DB:              db,
 		}
 		wg.Add(1)

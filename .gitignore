@@ -3,3 +3,5 @@
 *.sqlite-shm
 .idea
 jetstream-feed-generator
+config.yml
+config.yaml
