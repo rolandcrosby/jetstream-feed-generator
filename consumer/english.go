@@ -2,11 +2,14 @@ package consumer
 
 import (
 	"context"
-	apibsky "github.com/bluesky-social/indigo/api/bsky"
-	"github.com/bluesky-social/jetstream/pkg/models"
+	"database/sql"
+	dbpkg "jetstream-feed-generator/db/sqlc"
 	"log/slog"
 	"slices"
 	"unicode"
+
+	apibsky "github.com/bluesky-social/indigo/api/bsky"
+	"github.com/bluesky-social/jetstream/pkg/models"
 )
 
 // EmojiRange represents a Unicode range for emoji characters
@@ -46,27 +49,20 @@ func ContainsEmoji(s string) bool {
 type EnglishTextFeed struct {
 	name   string
 	logger *slog.Logger
+	q      *dbpkg.Queries
 }
 
-func (f *EnglishTextFeed) Initialize(ctx context.Context) error {
-	return nil
-}
-
-func (f *EnglishTextFeed) LatestCursor(ctx context.Context) (int64, error) {
-	return 0, nil
-}
-
-func (f *EnglishTextFeed) SaveCursor(ctx context.Context, cursor int64) error {
-	return nil
-}
-
-func NewEnglishTextFeed(name string, logger *slog.Logger) *EnglishTextFeed {
+func NewEnglishTextFeed(name string, logger *slog.Logger, db *sql.DB) *EnglishTextFeed {
 	feedLogger := logger.With("feed", name)
-	return &EnglishTextFeed{name, feedLogger}
+	return &EnglishTextFeed{name, feedLogger, dbpkg.New(db)}
 }
 
 func (f *EnglishTextFeed) Name() string {
 	return f.name
+}
+
+func (f *EnglishTextFeed) DB() *dbpkg.Queries {
+	return f.q
 }
 
 func (f *EnglishTextFeed) HandlePost(ctx context.Context, event *models.Event, post *apibsky.FeedPost) error {

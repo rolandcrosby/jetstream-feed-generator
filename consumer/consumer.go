@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"time"
 
+	dbpkg "jetstream-feed-generator/db/sqlc"
+
 	apibsky "github.com/bluesky-social/indigo/api/bsky"
 	jetstreamClient "github.com/bluesky-social/jetstream/pkg/client"
 	"github.com/bluesky-social/jetstream/pkg/client/schedulers/sequential"
@@ -25,9 +27,7 @@ type Config struct {
 
 type Feed interface {
 	Name() string
-	Initialize(ctx context.Context) error
-	LatestCursor(ctx context.Context) (int64, error)
-	SaveCursor(ctx context.Context, cursor int64) error
+	DB() *dbpkg.Queries
 	HandlePost(ctx context.Context, event *models.Event, post *apibsky.FeedPost) error
 }
 
@@ -36,13 +36,13 @@ func RunConsumer(ctx context.Context, config Config) error {
 	handler := handler{
 		feeds: []Feed{
 			NewComposerErrorsFeed("composer-errors", logger, config.DB),
-			//NewEnglishTextFeed("english-text", logger),
+			NewEnglishTextFeed("english-text", logger, config.DB),
 		},
 		latestCursor: config.StartCursor,
 	}
 
 	for _, f := range handler.feeds {
-		if err := f.Initialize(ctx); err != nil {
+		if err := f.DB().UpsertFeed(ctx, f.Name()); err != nil {
 			return fmt.Errorf("failed to initialize feed %s: %v", f.Name(), err)
 		}
 	}
@@ -54,7 +54,13 @@ func RunConsumer(ctx context.Context, config Config) error {
 	} else {
 		var resumeCursor int64
 		for _, f := range handler.feeds {
-			feedCursor, err := f.LatestCursor(ctx)
+			var err error
+			feedCursor := int64(0)
+			feed, err := f.DB().GetFeed(ctx, f.Name())
+			if err == nil && feed.LatestCursor.Valid {
+				feedCursor = feed.LatestCursor.Int64
+			}
+
 			if err != nil {
 				return fmt.Errorf("failed to get latest cursor for feed %s: %v", f.Name(), err)
 			}
@@ -94,7 +100,10 @@ func RunConsumer(ctx context.Context, config Config) error {
 			select {
 			case t := <-ticker.C:
 				for _, f := range handler.feeds {
-					err := f.SaveCursor(ctx, handler.latestCursor)
+					err := f.DB().UpdateFeedCursor(ctx, dbpkg.UpdateFeedCursorParams{
+						LatestCursor: sql.NullInt64{Int64: handler.latestCursor, Valid: true},
+						FeedName:     f.Name(),
+					})
 					if err != nil {
 						logger.Error("failed to save cursor", "feed", f.Name(), "error", err)
 					}
